@@ -15,3 +15,11 @@ h1 em,.hero h1 em{font-family:inherit;font-style:normal;font-weight:inherit;lett
 .wordmark small{font-family:Arial,Helvetica,sans-serif;font-size:7px;letter-spacing:1.6px;line-height:1.4;margin-top:9px;font-weight:600}
 @media(max-width:1000px){.wordmark,footer .wordmark{font-size:39px;letter-spacing:-2.6px}.wordmark small{font-size:6.5px;letter-spacing:1.3px}}
 @media(max-width:700px){.wordmark,footer .wordmark{font-size:39px;letter-spacing:-2.6px}.wordmark small{font-size:6.5px;letter-spacing:1.3px}}
+/* Generated, custom drawn wordmark. Transparent canvas is framed to its lettering. */
+.wordmark,footer .wordmark{display:inline-block;--wordmark-width:230px;font-size:0;letter-spacing:0;line-height:1}
+.wordmark-art{display:block;position:relative;width:var(--wordmark-width);height:calc(var(--wordmark-width) * .17127);overflow:hidden}
+.wordmark-art img{position:absolute;left:0;top:calc(var(--wordmark-width) * -.06906);width:100%;max-width:none;height:auto}
+.wordmark small{margin-top:10px;font-size:7px;letter-spacing:1.75px;line-height:1.4}
+footer .wordmark{--wordmark-width:260px}
+@media(max-width:1000px){header .wordmark{--wordmark-width:205px}}
+@media(max-width:700px){header{gap:20px}header .wordmark{--wordmark-width:clamp(165px,52vw,210px)}footer .wordmark{--wordmark-width:220px}.wordmark small{font-size:6.5px;letter-spacing:1.35px;margin-top:9px}}
