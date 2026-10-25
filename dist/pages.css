@@ -93,3 +93,13 @@ header.is-hidden{transform:translateY(-100%)}
 header.is-scrolled{box-shadow:0 10px 30px rgba(1,21,29,.07)}
 #mobile-nav{position:fixed;z-index:19;max-height:calc(100svh - 72px);overflow-y:auto}
 @media(prefers-reduced-motion:reduce){header{transition:none}}
+/* Pinned hero: the hero holds while the empty loft cross-fades into the fitted-out space (--reveal 0→1, set in app.js). */
+.hero-pin{--hh:105px;--reveal:0;position:relative;height:calc(100svh + 100svh)}
+.hero-pin .hero{position:sticky;top:0;height:100svh;min-height:560px;max-height:none}
+.hero-pin .hero-photo{will-change:opacity,transform}
+.hero-pin .hero-before{transform:scale(calc(1 + .04 * var(--reveal)))}
+.hero-pin .hero-after{opacity:var(--reveal);transform:scale(calc(1.04 - .04 * var(--reveal)))}
+.hero-pin .hero-content{bottom:calc(96px + var(--hh))}
+.hero-pin .scroll{bottom:calc(28px + var(--hh))}
+@media(max-width:700px){.hero-pin{--hh:85px}.hero-pin .hero{min-height:520px}}
+@media(prefers-reduced-motion:reduce){.hero-pin{--reveal:1;height:auto}.hero-pin .hero{position:relative;height:min(780px,calc(100svh - var(--hh)))}.hero-pin .hero-content{bottom:96px}.hero-pin .scroll{bottom:28px}.hero-pin .hero-before,.hero-pin .hero-after{transform:none}}

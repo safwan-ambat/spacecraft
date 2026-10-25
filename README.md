@@ -24,7 +24,7 @@ Serve `dist/` with a static HTTP server. Run `python3 scripts/check-site.py` to 
 
 `scripts/build-pages.py` regenerates the subpages. It reads the sitemap exports and `home-before-subpages.html` from the folder above this repository.
 
-Photos are illustrative Unsplash assets, served locally from `dist/assets/`. The logo is live text set in Sora.
+Photos are Unsplash assets, served locally from `dist/assets/`. The logo is live text set in Sora. `scripts/make-brand-assets.py` renders the favicon set and the social share image (`dist/og-image.jpg`) from the Sora font and the hero photo.
 
 ## Deployment
 
