@@ -1,16 +1,16 @@
-# Space Craft website prototype
+# Space Craft website
 
-A static, responsive workplace design and build website with original Space Craft copy, red/white/black styling and clearly labeled illustrative photography.
+A static, responsive workplace design and build website with original Space Craft copy and Unsplash photography.
 
 ## Pages
 
 The route inventory in `scripts/page-coverage.json` maps all 440 subpage URLs in OfficeBanao's public sitemap to Space Craft equivalents. The expanded site also includes service details, an all-pages directory, location and concept indexes, and a 404 page.
 
-Company content, concept studies, service pages, contact, careers and partner journeys use page-specific layouts. The journal and quick-read libraries use shared editorial templates and original topic-based planning notes. Illustrative concepts do not assert client work or credentials. Location pages do not assert delivery capability in those locations.
+Company content, concept studies, service pages, contact, careers and partner journeys use page-specific layouts. The journal and quick-read libraries use shared editorial templates and original topic-based planning notes.
 
 ## Forms
 
-Project inquiries, career interests and partner profiles are demos. They validate input and generate downloadable text briefs in the current browser tab. Nothing is submitted to a server or emailed.
+The project enquiry, career and partner forms post to a Google Apps Script web app that appends each submission to a private Google Sheet ("Space Craft — Website enquiries", tab "Enquiries"). The script is in `scripts/google-sheet-endpoint.gs`; the web app address is the single `ENQUIRY_ENDPOINT` constant in `dist/enquiry.js`. Forms validate in the browser, include a hidden spam-trap field, and the script re-validates and caps every field. To change the endpoint, redeploy the script as a new web app version and update that constant.
 
 ## Address
 
