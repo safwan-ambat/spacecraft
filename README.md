@@ -22,4 +22,10 @@ The address appears on the contact page and shared footer, with an external Goog
 
 Serve `dist/` with a static HTTP server. Run `python3 scripts/check-site.py` to validate internal links, fragment targets, local assets, headings and address coverage. The site has no build dependency or backend.
 
-Photos are illustrative Unsplash assets, served locally. The private ChatGPT Sites deployment handles access independently of the website's demo interactions.
+`scripts/build-pages.py` regenerates the subpages. It reads the sitemap exports and `home-before-subpages.html` from the folder above this repository.
+
+Photos are illustrative Unsplash assets, served locally from `dist/assets/`. The logo is live text set in Sora.
+
+## Deployment
+
+Vercel serves `dist/` directly (see `vercel.json`); there is no build step. The production domain is www.withspacecraft.com.

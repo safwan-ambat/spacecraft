@@ -23,3 +23,67 @@ h1 em,.hero h1 em{font-family:inherit;font-style:normal;font-weight:inherit;lett
 footer .wordmark{--wordmark-width:260px}
 @media(max-width:1000px){header .wordmark{--wordmark-width:205px}}
 @media(max-width:700px){header{gap:20px}header .wordmark{--wordmark-width:clamp(165px,52vw,210px)}footer .wordmark{--wordmark-width:220px}.wordmark small{font-size:6.5px;letter-spacing:1.35px;margin-top:9px}}
+/* Canoa-derived type system: Sora display with weight contrast, system-ui text at larger reading sizes, legible labels. */
+:root{--display:Sora,Arial,sans-serif;--text:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}
+body{font-family:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+h1,h2,h3,.steps summary,.step-number,.study-card b,.project-image>b,#form-status strong,.demo-result strong,.address-card address{font-family:var(--display)}
+h1,h2,h3{text-wrap:balance}p,li{text-wrap:pretty}
+h1,.hero h1,.page-hero h1,.article-heading h1,.journal-intro h1,.contact-page h1,.quick-heading h1,.directory h1,.legal-page h1,.error-page h1{font-weight:700;letter-spacing:-.035em;line-height:.94}
+.hero h1{line-height:.92}
+h2,.story h2,.contact h2,.page-cta h2,.process-page h2,.quick-panel h2,.article-content h2,.legal-page h2,.directory-group h2,dialog h2{font-weight:400;letter-spacing:-.03em;line-height:1.02}
+.article-content h2,.legal-page h2,.directory-group h2{letter-spacing:-.02em;line-height:1.12}
+h3,.service-card h3,.project-title h3,.page-card h3,.numbered-item h3,.study-card h3,.journal-card h3,.steps summary{font-weight:400;letter-spacing:-.02em;line-height:1.12}
+h1 em,h2 em,h3 em,.hero h1 em{font-family:inherit;font-style:normal;font-weight:700;letter-spacing:inherit}
+.hero h1 em{font-weight:inherit}
+.step-number{font-style:normal;font-weight:300;letter-spacing:-.05em}
+.footer-groups h2{font-family:var(--text);font-size:12px;font-weight:600;letter-spacing:.06em;line-height:1.4}
+.hero-bottom p,.intro-bottom p,.story p,.page-hero-copy>p,.lead-copy,.split-section p.lead-copy,.quick-heading>p,.article-heading .lead-copy,.journal-intro .lead-copy,.error-page>p{font-size:clamp(17px,1.3vw,20px);line-height:1.45}
+.section-head p,.service-card p,.process>div>p,.steps details p,.contact-intro>p,.split-section p,.page-card p,.page-cta p,.service-detail>div>p,.numbered-item p,.checklist p,.journal-card p,.takeaway li,.takeaway p,.process-page aside,dialog p,dialog li,.demo-result p,#form-status{font-size:clamp(15px,1.05vw,16px);line-height:1.55}
+.article-content p,.legal-page p,.process-page p,.quick-panel p{font-size:clamp(16px,1.2vw,18px);line-height:1.65}
+.eyebrow,.page-card .eyebrow,.journal-card .eyebrow,.article-content .eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;line-height:1.5}
+.hero-top,.hero-top span{font-size:12px;letter-spacing:.08em}
+nav,.nav-contact{font-size:14px}.text-link{font-size:14px}.card-link,.read-link{font-size:13px}.filter button{font-size:14px}
+.breadcrumbs,.article-meta,.library-summary,.number,.steps summary span,.numbered-item>span,.required-note,.search-label,label,.demo-form label,.library-controls label{font-size:12px}
+.hero-caption,.photo-note,.image-credit,.page-hero-photo figcaption,.article-photo figcaption,.quick-photo figcaption,.demo-label,.article-toc strong,.process-page aside strong,footer>p,.footer-base p,.footer-base a,.footer-top address a{font-size:11px;line-height:1.6}
+.project-image>span,.study-card>div>span{font-size:10px;letter-spacing:.08em}.project-title>span,.study-card>p{font-size:12px}sup{font-size:10px}
+.footer-groups a,.directory-group a,.article-toc{font-size:14px;line-height:1.7}.footer-top address{font-size:14px}footer>div{font-size:12px}
+input,select,textarea,.demo-form input,.demo-form select,.demo-form textarea,.library-controls input,.library-controls select,.search-label input{font-size:16px}
+.button,dialog .button{min-height:52px;padding:12px 20px 12px 24px;gap:24px;border-radius:6px;border:0;font-size:16px;font-weight:600;transition:background .2s,color .2s}
+.button span{display:inline-grid;place-items:center;width:24px;height:24px;font-size:18px}
+#form-status button,.demo-result button,.pagination button{border-radius:6px;padding:12px 20px;font-size:14px;font-weight:600}
+@media(max-width:700px){.button,dialog .button{padding:12px 16px 12px 20px;gap:18px;font-size:15px}.pagination button{padding:11px 16px;font-size:13px}.hero h1{line-height:.98}.footer-groups h2{font-size:12px}}
+/* Tetris-derived surfaces: navy ink, cool grey-blue tint, separated tiles with 8px corners, 6px controls. Space Craft red stays the accent. */
+:root{--ink:#01151d;--paper:#eaeff1;--line:#dfe5e8;--muted:#56656b;--radius:8px}
+.dark:hover{background:#0b2a36}
+.breadcrumbs,.filter button,.article-content .article-disclaimer{color:var(--muted)}
+.steps details,.steps details:last-child{border-color:#ced5d8}
+.demo-form input,.demo-form select,.demo-form textarea,.library-controls input,.library-controls select,.search-label input{border-bottom-color:#a8b2b6}
+.service-grid,.page-card-grid,.location-grid{gap:16px;border:0}
+.service-card,.page-card,.location-grid a{border:0;border-radius:var(--radius);background:var(--paper)}
+.services .service-card,.tone-paper .page-card,.tone-paper .location-grid a{background:#fff}
+.service-card:hover,.services .service-card:hover{background:var(--red);color:#fff}
+.service-card{padding:40px}.page-card{padding:40px}
+.page-card:hover,.location-grid a:hover{background:var(--line)}.tone-paper .page-card:hover{background:#f6f8f9}
+.project-image,.page-hero-photo,.page-hero-photo img,.article-photo,.article-photo img,.quick-photo,.quick-photo img,.editorial-photo,.editorial-photo img,.study-card>div,.study-card img{border-radius:var(--radius);overflow:hidden}
+.project-image>span,.project-image>b,.study-card>div>span{border-radius:4px}
+.demo-form,.takeaway,.library-controls,.article-toc,.process-page aside,#form-status,.demo-result,dialog{border-radius:var(--radius)}
+.notice{border-radius:0 var(--radius) var(--radius) 0}
+.demo-label{border-radius:4px}
+@media(max-width:700px){.service-grid,.page-card-grid,.location-grid{gap:12px}.service-card,.page-card{padding:28px}.page-hero-photo,.page-hero-photo img{border-radius:0}}
+/* Type wordmark: the Sora headline face, tightly tracked, with "craft" in the brand red. */
+.wordmark-type{display:block;font-family:var(--display);font-size:34px;font-weight:700;letter-spacing:-.06em;line-height:.9;white-space:nowrap}
+.wordmark-type .logo-space{color:var(--ink)}.wordmark-type .logo-craft{color:var(--red)}
+footer .wordmark-type{font-size:44px}
+.wordmark small{margin-top:8px;font-family:var(--text);font-size:9px;font-weight:600;letter-spacing:.16em;color:var(--ink)}
+@media(max-width:700px){header .wordmark-type{font-size:28px}footer .wordmark-type{font-size:36px}.wordmark small{font-size:8px;letter-spacing:.14em}}
+/* Responsive hardening: grid tracks may shrink below their longest word, long words wrap, and touch targets reach 44px on touch-sized screens. */
+h1,h2,h3,.article-content p{overflow-wrap:break-word;hyphens:auto}
+.service-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.page-card-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.location-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.journal-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.footer-groups{grid-template-columns:repeat(4,minmax(0,1fr))}
+.form-explainer{font-size:12px!important}.pagination-status{font-size:12px}
+@media(max-width:1000px){.service-card,.page-card{padding:28px 24px}.location-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.journal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}header nav a{padding:12px 0}}
+@media(max-width:700px){.service-grid,.page-card-grid,.journal-grid{grid-template-columns:minmax(0,1fr)}.location-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.location-grid a{padding:18px}.footer-groups{grid-template-columns:repeat(2,minmax(0,1fr))}
+.breadcrumbs a,.article-meta a,.footer-groups a,.footer-base a,.footer-top address a{display:inline-block;padding:12px 0;margin:-6px 0}.footer-groups a{display:block}
+.text-link{padding-top:6px;padding-bottom:14px}.filter button{min-height:44px}.article-toc a{display:block;padding:10px 0}.pagination button{min-height:44px}
+.directory h1,.legal-page h1,.error-page h1{font-size:clamp(38px,11vw,56px)}}
+@media(max-width:700px){.page-hero,.split-section,.service-detail,.contact-page,.article-layout,.quick-read,.study-grid,.checklist,.library-controls{grid-template-columns:minmax(0,1fr)}.page-hero-copy{min-width:0}}
+@media(max-width:420px){h1{overflow-wrap:anywhere}.location-grid{grid-template-columns:minmax(0,1fr)}.page-hero h1,.contact-page h1,.journal-intro h1{font-size:clamp(34px,10.5vw,44px)}.hero h1{font-size:clamp(36px,11vw,46px)}}
