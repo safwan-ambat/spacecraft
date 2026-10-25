@@ -4,7 +4,7 @@ mobile.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{mobile.h
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){mobile.hidden=true;menu.setAttribute('aria-expanded','false')}});
 // Sticky header: hide while scrolling down, reveal on scroll up; stays put while the menu is open or focused.
 const siteHeader=document.querySelector('header');let lastY=scrollY;
-addEventListener('scroll',()=>{const y=Math.max(scrollY,0);if(Math.abs(y-lastY)<6)return;const keep=menu.getAttribute('aria-expanded')==='true'||siteHeader.contains(document.activeElement);siteHeader.classList.toggle('is-scrolled',y>8);siteHeader.classList.toggle('is-hidden',!keep&&y>lastY&&y>siteHeader.offsetHeight);mobile.style.top=siteHeader.getBoundingClientRect().bottom+'px';lastY=y},{passive:true});
+addEventListener('scroll',()=>{const y=Math.max(scrollY,0);if(Math.abs(y-lastY)<6)return;const pin=document.querySelector('.hero-pin');const keep=menu.getAttribute('aria-expanded')==='true'||siteHeader.contains(document.activeElement)||(pin&&pin.getBoundingClientRect().bottom>innerHeight);siteHeader.classList.toggle('is-scrolled',y>8);siteHeader.classList.toggle('is-hidden',!keep&&y>lastY&&y>siteHeader.offsetHeight);mobile.style.top=siteHeader.getBoundingClientRect().bottom+'px';lastY=y},{passive:true});
 menu.addEventListener('click',()=>{siteHeader.classList.remove('is-hidden');mobile.style.top=siteHeader.getBoundingClientRect().bottom+'px'});
 // Pinned hero: map scroll through the pin to --reveal, holding briefly at each end so both images read fully.
 const heroPin=document.querySelector('.hero-pin');
