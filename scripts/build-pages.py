@@ -211,7 +211,7 @@ home=home.replace('href="#process"','href="/how-we-work/"')
 for key,slug in [('focus','focus-and-flow'),('together','a-place-to-connect'),('flexible','room-to-grow')]:
  pattern=r'<button class="project([^\"]*)" data-category="'+key+r'" data-project="'+key+r'">(.*?)</button>'
  home=re.sub(pattern,lambda m:'<a class="project'+m.group(1)+'" data-category="'+key+'" href="/projects/'+slug+'/">'+m.group(2)+'</a>',home,flags=re.S)
-home=home.replace('alt="Illustrative workplace: light-filled lounge with collaborative seating"','alt="Illustrative workplace: a long timber table beneath pendant lights beside a shared kitchen"')
+home=home.replace('src="/assets/workplace.jpg" alt="Illustrative workplace: light-filled lounge with collaborative seating"','src="/assets/hero.jpg" alt="Illustrative workplace: a long timber table with studio stools in a daylit office with a timber floor"')
 home=home.replace('alt="Illustrative relaxed team lounge with sofa seating"','alt="Illustrative shared table and kitchen under a row of pendant lights"')
 home=home.replace('alt="Illustrative open office with warm timber, greenery and flexible seating"','alt="Illustrative sunlit office with plants, lounge chairs and people working together"')
 home=home.replace('alt="Illustrative airy office with daylight and individual workstations"','alt="Illustrative bright office with glass-walled rooms, plants and individual workstations"')

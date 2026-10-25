@@ -87,3 +87,9 @@ h1,h2,h3,.article-content p{overflow-wrap:break-word;hyphens:auto}
 .directory h1,.legal-page h1,.error-page h1{font-size:clamp(38px,11vw,56px)}}
 @media(max-width:700px){.page-hero,.split-section,.service-detail,.contact-page,.article-layout,.quick-read,.study-grid,.checklist,.library-controls{grid-template-columns:minmax(0,1fr)}.page-hero-copy{min-width:0}}
 @media(max-width:420px){h1{overflow-wrap:anywhere}.location-grid{grid-template-columns:minmax(0,1fr)}.page-hero h1,.contact-page h1,.journal-intro h1{font-size:clamp(34px,10.5vw,44px)}.hero h1{font-size:clamp(36px,11vw,46px)}}
+/* Sticky header that slides away on scroll down and returns on scroll up (see pages.js / app.js). */
+header{position:sticky;top:0;z-index:20;transition:transform .32s cubic-bezier(.2,.7,.2,1),box-shadow .32s}
+header.is-hidden{transform:translateY(-100%)}
+header.is-scrolled{box-shadow:0 10px 30px rgba(1,21,29,.07)}
+#mobile-nav{position:fixed;z-index:19;max-height:calc(100svh - 72px);overflow-y:auto}
+@media(prefers-reduced-motion:reduce){header{transition:none}}
