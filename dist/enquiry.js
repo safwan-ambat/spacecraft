@@ -3,7 +3,7 @@ const ENQUIRY_ENDPOINT = 'https://script.google.com/macros/s/AKfycby7PiAs4v1y_ps
 const SENT_COPY = {
   project: 'We’ve received your enquiry and will be in touch soon.',
   career: 'We’ve received your details. Thank you for your interest in Space Craft.',
-  partner: 'We’ve received your details. Thank you for getting in touch.'
+  partner: 'Thanks for the introduction. We’ll be in touch when a project fits your expertise.'
 };
 
 function bindEnquiryForm(form) {

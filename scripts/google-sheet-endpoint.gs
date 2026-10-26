@@ -6,8 +6,11 @@
  * @OnlyCurrentDoc
  */
 const SHEET = 'Enquiries';
-const HEADERS = ['Received', 'Source', 'Name', 'Email', 'Company', 'Location', 'Interest', 'Area', 'Message', 'Page'];
-const LIMITS = { name: 100, email: 200, company: 150, location: 150, interest: 150, area: 100, brief: 4000, page: 300 };
+// New columns go at the end so earlier rows stay aligned.
+const HEADERS = ['Received', 'Source', 'Name', 'Email', 'Company', 'Location', 'Interest', 'Area', 'Message', 'Page',
+  'Phone', 'Website', 'Team size', 'Works in'];
+const LIMITS = { name: 100, email: 200, company: 150, location: 150, interest: 150, area: 100, brief: 4000, page: 300,
+  phone: 20, portfolio: 300, team: 40, coverage: 200 };
 const SOURCES = ['project', 'career', 'partner'];
 
 function json_(obj) {
@@ -35,7 +38,11 @@ function doPost(e) {
       interest: clean_(p.service || p.interest || p.specialism, LIMITS.interest),
       area: clean_(p.area, LIMITS.area),
       brief: clean_(p.brief, LIMITS.brief),
-      page: clean_(p.page, LIMITS.page)
+      page: clean_(p.page, LIMITS.page),
+      phone: clean_(p.phone, LIMITS.phone),
+      portfolio: clean_(p.portfolio, LIMITS.portfolio),
+      team: clean_(p.team, LIMITS.team),
+      coverage: clean_(p.coverage, LIMITS.coverage)
     };
     if (!row.name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(row.email)) {
       return json_({ ok: false, error: 'invalid' });
@@ -46,13 +53,12 @@ function doPost(e) {
     try {
       const ss = SpreadsheetApp.getActiveSpreadsheet();
       const sheet = ss.getSheetByName(SHEET) || ss.insertSheet(SHEET);
-      if (sheet.getLastRow() === 0) {
-        sheet.appendRow(HEADERS);
-        sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold');
+      if (sheet.getLastRow() === 0 || sheet.getLastColumn() < HEADERS.length) {
+        sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold');
         sheet.setFrozenRows(1);
       }
       sheet.appendRow([new Date(), row.source, row.name, row.email, row.company, row.location,
-        row.interest, row.area, row.brief, row.page]);
+        row.interest, row.area, row.brief, row.page, row.phone, row.portfolio, row.team, row.coverage]);
     } finally {
       lock.releaseLock();
     }
