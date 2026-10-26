@@ -37,7 +37,7 @@ function doPost(e) {
       brief: clean_(p.brief, LIMITS.brief),
       page: clean_(p.page, LIMITS.page)
     };
-    if (!row.name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(row.email) || row.brief.length < 10) {
+    if (!row.name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(row.email)) {
       return json_({ ok: false, error: 'invalid' });
     }
 
