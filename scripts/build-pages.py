@@ -1,5 +1,6 @@
 from pathlib import Path
 import re,json,html,xml.etree.ElementTree as ET
+from datetime import date
 from urllib.parse import urlparse,quote
 ROOT=Path(__file__).resolve().parents[1]; D=ROOT/'dist'; WORK=ROOT.parent
 E=html.escape
@@ -26,18 +27,107 @@ def hero(kicker,title,description,image='studio',label=None,link=('/contact-us/'
  return f'<section class="page-hero"><div class="page-hero-copy"><div class="eyebrow">{E(kicker)}</div><h1>{title}</h1><p>{description}</p><a class="text-link" href="{link[0]}">{link[1]} <span>↗</span></a></div>'+photo(image,label or 'Illustrative workplace interior','page-hero-photo')+'</section>'
 def cards(items,cls='page-card-grid'):
  return f'<div class="{cls}">'+''.join(f'<a class="page-card" href="/{path}/"><span class="eyebrow">{E(tag)}</span><h3>{title}</h3><p>{desc}</p><span class="card-arrow">↗</span></a>' for path,title,desc,tag in items)+'</div>'
-def social(title,description,url):
+def social(title,description,url,og_type='website'):
  """Favicon links plus Open Graph / Twitter tags so shared links show the brand card."""
  t,d=E(title,quote=True),E(description,quote=True)
  return ('<link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">'
-  f'<meta property="og:type" content="website"><meta property="og:site_name" content="Space Craft"><meta property="og:title" content="{t}"><meta property="og:description" content="{d}"><meta property="og:url" content="{url}">'
+  f'<meta property="og:type" content="{og_type}"><meta property="og:site_name" content="Space Craft"><meta property="og:title" content="{t}"><meta property="og:description" content="{d}"><meta property="og:url" content="{url}">'
   f'<meta property="og:image" content="{BASE}/og-image.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Space Craft — Make room for better work.">'
   f'<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{t}"><meta name="twitter:description" content="{d}"><meta name="twitter:image" content="{BASE}/og-image.jpg">')
 
+# Search and answer-engine metadata: page descriptions, robots directives and one JSON-LD @graph per page.
+BUILD_DATE=date.today().isoformat()
+SUMMARY='Space Craft is a workplace design and build studio in Bengaluru, India. It plans, designs and fits out offices — workplace planning, interior design and build & fit-out — from the first brief to move-in.'
+ORG_ID=BASE+'/#organization';SITE_ID=BASE+'/#website'
+NOINDEX={'System','Navigation'}  # the 404 page and thin alias routes that only point elsewhere
+INDEX_ROBOTS='index,follow,max-snippet:-1,max-image-preview:large'
+descriptions={}  # path -> meta description, kept unique across the site
+def text_of(fragment):return re.sub(r'\s+',' ',html.unescape(re.sub('<[^>]+>',' ',fragment))).replace(' .','.').replace(' ,',',').strip()
+def lead_paragraphs(body):
+ """Visible paragraph text in reading order, skipping breadcrumbs, forms and small print."""
+ body=re.split(r'<form\b',body,1)[0]
+ body=re.sub(r'<(nav|script)\b.*?</\1>','',body,flags=re.S)
+ body=re.sub(r'<a class="(?:journal-card|page-card|study-card)\b.*?</a>|<section class="page-cta">.*?</section>','',body,flags=re.S)  # link cards and the shared call to action describe other pages
+ out=[]
+ for attrs,inner in re.findall(r'<p([^>]*)>(.*?)</p>',body,flags=re.S):
+  if re.search(r'svc-row-label|form-explainer|required-note|\bhidden\b',attrs):continue
+  t=text_of(inner)
+  if len(t)>=30:out.append(t if t[-1] in '.?!…' else t+'.')
+ return out
+def fit_description(text,lo=120,hi=160):
+ """Trim to a 120–160 character snippet, preferring a sentence end, then a word boundary."""
+ text=re.sub(r'\s+',' ',text).strip()
+ if len(text)<=hi:return text
+ ends=[m.end() for m in re.finditer(r'[.?!](?=\s|$)',text[:hi]) if m.end()>=lo]
+ if ends:return text[:ends[-1]]
+ return text[:hi-1].rsplit(' ',1)[0].rstrip(',;:—–- ')+'…'
+CLOSERS=['Space Craft is a workplace design and build studio in Bengaluru, India.','Space Craft designs and builds workplaces in Bengaluru.','Workplace design and build by Space Craft.']
+duplicate_of={}  # path -> earlier path with the same title and copy; it becomes the canonical URL
+def describe(path,title,body,desc=None):
+ """A specific, unique description built from the page's own copy."""
+ parts=([text_of(desc)] if desc else [])+lead_paragraphs(body)
+ text=fit_description(' '.join(parts) or text_of(title))
+ if len(text)<120:text=next((text+' '+c for c in CLOSERS if 120<=len(text)+1+len(c)<=160),fit_description(text+' '+CLOSERS[0]))
+ base,name=text,text_of(title).rstrip('.')
+ if text in descriptions.values():text=fit_description(name+': '+base)
+ if text in descriptions.values():  # same title and same copy: a duplicate route of an earlier page
+  duplicate_of[path]=next(p for p,d in descriptions.items() if d==text)
+  text=fit_description(name+' (another edition): '+base)
+ descriptions[path]=text
+ return text
+def org_node():
+ return {'@type':['Organization','ProfessionalService'],'@id':ORG_ID,'name':'Space Craft','alternateName':'Spacecraft','url':BASE+'/',
+  'logo':{'@type':'ImageObject','url':BASE+'/icon-512.png','width':512,'height':512},'image':BASE+'/og-image.jpg','description':SUMMARY,
+  'address':{'@type':'PostalAddress','streetAddress':'18, Buddha Vihara Rd, Cox Town','addressLocality':'Bengaluru','addressRegion':'Karnataka','postalCode':'560005','addressCountry':'IN'},
+  'areaServed':{'@type':'Country','name':'India'},'knowsAbout':['Workplace planning','Office interior design','Office build and fit-out']}
+def breadcrumb_items(body,url):
+ m=re.search(r'<div class="breadcrumbs">(.*?)</div>',body,flags=re.S)
+ if not m:return []
+ items=[(text_of(name),BASE+href) for href,name in re.findall(r'<a href="([^"]+)">(.*?)</a>',m.group(1))]
+ last=re.findall(r'<span>([^<]+)</span>\s*$',m.group(1))
+ return items+([(text_of(last[0]),url)] if last else [])
+def faq_node(body,url):
+ """FAQPage for visible <details> questions, unless the page already carries its own FAQPage block."""
+ if '"FAQPage"' in body:return None
+ qa=[(text_of(re.sub(r'<b\b.*?</b>','',q,flags=re.S)),text_of(a)) for q,a in re.findall(r'<details[^>]*><summary>(.*?)</summary>(.*?)</details>',body,flags=re.S)]
+ qa=[(q,a) for q,a in qa if q.endswith('?') and a]
+ return {'@type':'FAQPage','@id':url+'#faq','url':url,'mainEntity':[{'@type':'Question','name':q,'acceptedAnswer':{'@type':'Answer','text':a}} for q,a in qa]} if qa else None
+def structured_data(path,title,description,body,kind):
+ """One schema.org @graph per page with stable @ids: organisation, site, page, breadcrumbs and the page's main entity."""
+ url=BASE+'/'+(path+'/' if path else '');name=text_of(title).rstrip('.') if path else 'Space Craft — Make room for better work'
+ page_type={'contact-us':'ContactPage','about-us':'AboutPage'}.get(path,'CollectionPage' if kind in ('Collection','Topic','Directory') or path in ('blogs','locations','services','projects') else 'WebPage')
+ page={'@type':page_type,'@id':url+'#webpage','url':url,'name':name,'description':description,'isPartOf':{'@id':SITE_ID},'about':{'@id':ORG_ID},'inLanguage':'en-IN'}
+ graph=[org_node(),{'@type':'WebSite','@id':SITE_ID,'url':BASE+'/','name':'Space Craft','description':SUMMARY,'publisher':{'@id':ORG_ID},'inLanguage':'en-IN'},page]
+ crumbs=breadcrumb_items(body,url)
+ if crumbs:
+  page['breadcrumb']={'@id':url+'#breadcrumb'}
+  graph.append({'@type':'BreadcrumbList','@id':url+'#breadcrumb','itemListElement':[{'@type':'ListItem','position':i,'name':n,'item':u} for i,(n,u) in enumerate(crumbs,1)]})
+ img=re.search(r'<img [^>]*src="(/assets/[^"]+)"',body)
+ if img:page['primaryImageOfPage']={'@type':'ImageObject','url':BASE+img.group(1)}
+ if kind in ('Service','Location'):
+  city=text_of(re.search(r'<div class="breadcrumbs">.*<span>([^<]+)</span></div>',body).group(1)) if kind=='Location' else None
+  graph.append({'@type':'Service','@id':url+'#service','name':f'Office interior design in {city}' if city else name,'serviceType':'Office interior design and build' if city else name,'description':description,'url':url,
+   'provider':{'@id':ORG_ID},'areaServed':{'@type':'City','name':city,'containedInPlace':{'@type':'Country','name':'India'}} if city else {'@type':'Country','name':'India'}})
+  page['mainEntity']={'@id':url+'#service'}
+ if kind in ('Journal','Quick read'):
+  article={'@type':'Article','@id':url+'#article','headline':name[:110],'description':description,'image':BASE+(img.group(1) if img else '/og-image.jpg'),
+   'author':{'@id':ORG_ID},'publisher':{'@id':ORG_ID},'mainEntityOfPage':{'@id':url+'#webpage'},'isPartOf':{'@id':SITE_ID},'inLanguage':'en-IN'}
+  # Only real, visible dates: <time datetime> in the page body (first = published; one marked updated/modified = modified).
+  for attrs in re.findall(r'<time\b([^>]*\bdatetime="[^"]+"[^>]*)>',body):
+   article.setdefault('dateModified' if re.search(r'updated|modified',attrs) else 'datePublished',re.search(r'datetime="([^"]+)"',attrs).group(1))
+  graph.append(article);page['mainEntity']={'@id':url+'#article'}
+ faq=faq_node(body,url)
+ if faq:graph.append(faq)
+ return '<script type="application/ld+json">'+json.dumps({'@context':'https://schema.org','@graph':graph},ensure_ascii=False).replace('</','<\\/')+'</script>'
+def seo_head(path,title,description,body,kind):
+ """Robots directive plus the JSON-LD graph for a page's <head>."""
+ robots='noindex,follow' if kind in NOINDEX else INDEX_ROBOTS
+ return f'<meta name="robots" content="{robots}">'+structured_data(path,title,description,body,kind)
+
 def write(path,title,body,kind='Page',active='',desc=None):
  path=path.strip('/');(D/path).mkdir(parents=True,exist_ok=True)
- description=desc or re.sub('<[^>]+>','',title)+' — Space Craft workplace design and build.'
- s=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{E(description,quote=True)}"><meta name="theme-color" content="#c42e24"><title>{E(re.sub("<[^>]+>","",title))} — Space Craft</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/pages.css"><link rel="canonical" href="{BASE}/{path}/">'+social(re.sub("<[^>]+>","",title)+" — Space Craft",description,f"{BASE}/{path}/")+f'</head><body>'+header(active)+f'<main id="main">{body}</main>'+footer()+'<script src="/enquiry.js"></script><script src="/pages.js"></script></body></html>'
+ description=describe(path,title,body,desc)
+ s=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{E(description,quote=True)}"><meta name="theme-color" content="#c42e24"><title>{E(re.sub("<[^>]+>","",title))} — Space Craft</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/pages.css"><link rel="canonical" href="{BASE}/{duplicate_of.get(path,path)}/">'+social(re.sub("<[^>]+>","",title)+" — Space Craft",description,f"{BASE}/{path}/",'article' if kind in ('Journal','Quick read') else 'website')+seo_head(path,title,description,body,kind)+f'</head><body>'+header(active)+f'<main id="main">{body}</main>'+footer()+'<script src="/enquiry.js"></script><script src="/pages.js"></script></body></html>'
  s=re.sub(r'(href="[^"]*#[^"]*)/"',r'\1"',s)
  s=re.sub(r'alt="Illustrative (\w)',lambda m:'alt="'+m.group(1).upper(),s)
  (D/path/'index.html').write_text(s)
@@ -313,6 +403,30 @@ for src,dst in aliases.items():
  write(src,'Explore Space Craft.',crumb('Continue exploring')+'<section class="section"><div class="eyebrow">SPACE CRAFT</div><h1>A different perspective.<br><em>The same next step.</em></h1><p class="lead-copy narrow">Explore Space Craft’s approach and workplace concepts.</p><a class="button dark" href="/'+dst+'/">Continue exploring <span>↗</span></a></section>','Navigation')
 # Expose every route through a searchable site directory, not an unreachable collection of files.
 write('all-pages','Explore every part of Space Craft.',crumb('All pages')+'<section class="section directory"><div class="eyebrow">THE COMPLETE SITE</div><h1>Find your<br><em>next perspective.</em></h1><p class="lead-copy narrow">Explore company information, services, concept studies, location guides and the design library.</p><label class="search-label">Find a page<input type="search" data-search="page-directory" placeholder="Search by topic, city or page name…"></label><div id="page-directory">'+''.join('<section class="directory-group"><h2>'+kind+'</h2><div>'+''.join(f'<a data-search-item href="{E(r["path"])}">{E(r["title"])} <span>↗</span></a>' for r in records if r['kind']==kind)+'</div></section>' for kind in dict.fromkeys(r['kind'] for r in records))+'</div><p data-search-empty="page-directory" hidden>No matching page. Try another topic or a shorter search.</p></section>','Directory')
+# Crawler discovery: sitemap with lastmod, an allow-all robots.txt that names the answer-engine bots, and llms.txt.
+AI_CRAWLERS=['GPTBot','OAI-SearchBot','ChatGPT-User','ClaudeBot','Claude-SearchBot','Claude-User','PerplexityBot','Perplexity-User','Google-Extended','Googlebot','Bingbot','Applebot','Applebot-Extended','CCBot']
+def indexable():return [r for r in records if r['kind'] not in NOINDEX and r['path'].strip('/') not in duplicate_of]
+def sitemap():
+ urls=['/']+[r['path'] for r in indexable()]
+ return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+''.join(f'<url><loc>{BASE}{u}</loc><lastmod>{BUILD_DATE}</lastmod></url>' for u in urls)+'</urlset>'
+def robots_txt():
+ return ''.join(f'User-agent: {bot}\nAllow: /\n\n' for bot in AI_CRAWLERS)+'User-agent: *\nAllow: /\n\nSitemap: '+BASE+'/sitemap.xml\n'
+def llms_txt():
+ """llms.txt (llmstxt.org): a summary plus key links, generated from the same data as the pages."""
+ def link(path,name):return f'- [{name}]({BASE}/{path}/): {descriptions[path]}'
+ sec=lambda title,lines:f'\n## {title}\n\n'+'\n'.join(lines)+'\n'
+ out=f'# Space Craft\n\n> {SUMMARY}\n\nStudio address: {ADDRESS}, India. Work is scoped project by project. Contact is through the enquiry forms on the site.\n'
+ out+=sec('Company',[link('about-us','About Space Craft'),link('why-space-craft','Why Space Craft'),link('how-we-work','How we work'),link('projects','Space studies (workplace concepts)')])
+ out+=sec('Services',[link('services','What we do (overview)')]+[link('services/'+s['slug'],s['title']) for s in services])
+ out+=sec('Contact, partners and careers',[link('contact-us','Contact and project enquiries'),link('become-a-partner','Become a partner'),link('career','Careers'),link('job-openings','Disciplines and expressions of interest')])
+ out+=sec('Ideas',[link('blogs',f'Design journal ({len(articles)} planning notes)'),link('web-stories',f'Quick reads ({len(stories)} short notes)'),link('author','Space Craft editorial')])
+ out+=sec('Locations',[link('locations','Locations index')]+[link('office-interior-designer-in-'+c,'Office interior design in '+city_name(c)) for c in sorted(cities)])
+ out+=sec('Optional',[link('all-pages','All pages (site directory)'),link('privacy-policy','Privacy'),link('terms-and-conditions','Terms of use')])
+ return out
+def write_discovery_files():
+ (D/'sitemap.xml').write_text(sitemap())
+ (D/'robots.txt').write_text(robots_txt())
+ (D/'llms.txt').write_text(llms_txt())
 # Updated home shares real navigation and the supplied address.
 home=(WORK/'home-before-subpages.html').read_text()
 home=re.sub(r'<a class="skip".*?</header>\s*<div id="mobile-nav".*?</div>',header(),home,flags=re.S)
@@ -339,7 +453,8 @@ home=home.replace('alt="Relaxed team lounge with sofa seating"','alt="Shared tab
 home=home.replace('alt="Open office with warm timber, greenery and flexible seating"','alt="Sunlit office with plants, lounge chairs and people working together"')
 home=home.replace('alt="Airy office with daylight and individual workstations"','alt="Bright office with glass-walled rooms, plants and individual workstations"')
 home=home.replace('>space craft<span class="brand-dot">.</span>','><span class="wordmark-type"><span class="logo-space">space</span><span class="logo-craft">craft</span></span>').replace('Space Craft home','Spacecraft home')
-home=home.replace('</head>','<link rel="canonical" href="'+BASE+'/">'+social('Space Craft — Make room for better work.','Thoughtful workplace interiors, from the first brief to the finishing details. Workplace design and build in Bengaluru.',BASE+'/')+'</head>')
+home_desc=html.unescape(re.search(r'<meta name="description" content="([^"]*)"',home).group(1));descriptions['']=home_desc
+home=home.replace('</head>','<link rel="canonical" href="'+BASE+'/">'+social('Space Craft — Make room for better work.',home_desc,BASE+'/')+seo_head('','Space Craft',home_desc,home,'Home')+'</head>')
 (D/'index.html').write_text(home)
 # Route coverage audit stored alongside authoring source.
 actual={r['path'].strip('/') for r in records};mapped=[]
@@ -350,8 +465,7 @@ for kind,paths in source.items():
   mapped.append({'reference':'https://officebanao.com/'+p+'/','space_craft':'/'+p+'/','kind':kind})
 (ROOT/'scripts'/'page-coverage.json').write_text(json.dumps({'reference_routes':len(mapped),'generated_subpages':len(records),'address':ADDRESS,'mapping':mapped},indent=2))
 (D/'site-index.json').write_text(json.dumps(records))
-(D/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>'+BASE+'/</loc></url>'+''.join('<url><loc>'+BASE+r['path']+'</loc></url>' for r in records)+'</urlset>')
-(D/'robots.txt').write_text('User-agent: *\nDisallow: /\n')
+write_discovery_files()
 write('404','A little off plan.', '<section class="section error-page"><div class="eyebrow">404 / PAGE NOT FOUND</div><h1>Let’s find<br><em>your way back.</em></h1><p>This page is not part of the current plan. Explore the full site or start again from home.</p><a class="button dark" href="/all-pages/">Explore all pages <span>↗</span></a></section>','System')
 (D/'404.html').write_text((D/'404'/'index.html').read_text())
 print(json.dumps({'reference_routes_covered':len(mapped),'generated_subpages':len(records),'locations':len(cities),'articles':len(articles),'short_reads':len(stories)}))
