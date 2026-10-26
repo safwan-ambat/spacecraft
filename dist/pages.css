@@ -112,3 +112,6 @@ form.is-sent .enquiry-result,form.is-sent #form-status{margin-top:0}
 .enquiry-result button,#form-status button{margin-top:16px}
 .form-explainer a{text-decoration:underline;text-underline-offset:3px}
 .required-note a{text-decoration:underline;text-underline-offset:3px}
+/* Field focus: no boxed ring; the underline goes solid and thickens instead (white on the red section, navy elsewhere). */
+input:focus,select:focus,textarea:focus{outline:none;border-bottom-color:var(--focus-line,var(--ink));box-shadow:0 1px 0 var(--focus-line,var(--ink))}
+.contact{--focus-line:#fff}
