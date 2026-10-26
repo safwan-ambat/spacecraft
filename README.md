@@ -12,6 +12,8 @@ Company content, concept studies, service pages, contact, careers and partner jo
 
 The project enquiry, career and partner forms post to a Google Apps Script web app that appends each submission to a private Google Sheet ("Space Craft — Website enquiries", tab "Enquiries"). The script is in `scripts/google-sheet-endpoint.gs`; the web app address is the single `ENQUIRY_ENDPOINT` constant in `dist/enquiry.js`. Forms validate in the browser, include a hidden spam-trap field, and the script re-validates and caps every field. To change the endpoint, redeploy the script as a new web app version and update that constant.
 
+Location fields suggest Indian cities (list in `dist/enquiry.js`). Company fields suggest about 100,000 company names from Wikidata (CC0, public domain): Indian companies plus companies worldwide with an English Wikipedia article, ranked by prominence with a boost for Indian firms. They live in `dist/data/companies/` as small files keyed by the first two letters; refresh them with `python3 scripts/fetch-company-names.py`. Free text is always accepted.
+
 ## Address
 
 18, Buddha Vihara Rd, Cox Town, Bengaluru, Karnataka 560005

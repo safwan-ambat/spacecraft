@@ -75,3 +75,35 @@ if (locationFields.length) {
   document.body.append(list);
   locationFields.forEach(input => { input.setAttribute('list', list.id); input.autocomplete = 'off'; });
 }
+
+// Company suggestions from Wikidata (built by scripts/fetch-company-names.py). Names are split into small files by
+// the first two letters of the normalised name; each is fetched once, on demand, and the best matches fill a datalist.
+const companyKey = s => s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/^the\s+/, '').replace(/[^a-z0-9]/g, '');
+const companyShards = new Map();
+const loadCompanies = prefix => {
+  if (!companyShards.has(prefix)) {
+    companyShards.set(prefix, fetch('/data/companies/' + prefix + '.json').then(r => (r.ok ? r.json() : [])).catch(() => []));
+  }
+  return companyShards.get(prefix);
+};
+document.querySelectorAll('input[name="company"]').forEach((input, i) => {
+  const list = document.createElement('datalist');
+  list.id = 'company-suggestions-' + i;
+  document.body.append(list);
+  input.setAttribute('list', list.id);
+  input.autocomplete = 'off';
+  let latest = '';
+  input.addEventListener('input', async () => {
+    const typed = companyKey(input.value);
+    latest = typed;
+    if (typed.length < 2) { list.replaceChildren(); return; }
+    const names = await loadCompanies(typed.slice(0, 2));
+    if (latest !== typed) return; // a newer keystroke has taken over
+    const matches = [];
+    for (const name of names) {
+      if (companyKey(name).startsWith(typed) && name !== input.value) matches.push(name);
+      if (matches.length === 8) break;
+    }
+    list.replaceChildren(...matches.map(name => Object.assign(document.createElement('option'), { value: name })));
+  });
+});
