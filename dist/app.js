@@ -2,10 +2,10 @@ const menu=document.querySelector('.menu'),mobile=document.querySelector('#mobil
 menu.addEventListener('click',()=>{const open=menu.getAttribute('aria-expanded')!=='true';menu.setAttribute('aria-expanded',String(open));mobile.hidden=!open;menu.querySelector('span').textContent=open?'−':'＋'});
 mobile.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{mobile.hidden=true;menu.setAttribute('aria-expanded','false');menu.querySelector('span').textContent='＋'}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){mobile.hidden=true;menu.setAttribute('aria-expanded','false')}});
-// Sticky header: hide while scrolling down, reveal on scroll up; stays put while the menu is open or focused.
+// Sticky header: hide while scrolling down, reveal on scroll up; stays put while the menu is open or focused. The menu sits at top:var(--header-h) (pages.css), since the header is always revealed while it is open.
 const siteHeader=document.querySelector('header');let lastY=scrollY;
-addEventListener('scroll',()=>{const y=Math.max(scrollY,0);if(Math.abs(y-lastY)<6)return;const pin=document.querySelector('.hero-pin');const keep=menu.getAttribute('aria-expanded')==='true'||siteHeader.contains(document.activeElement)||(pin&&pin.getBoundingClientRect().bottom>innerHeight);siteHeader.classList.toggle('is-scrolled',y>8);siteHeader.classList.toggle('is-hidden',!keep&&y>lastY&&y>siteHeader.offsetHeight);mobile.style.top=siteHeader.getBoundingClientRect().bottom+'px';lastY=y},{passive:true});
-menu.addEventListener('click',()=>{siteHeader.classList.remove('is-hidden');mobile.style.top=siteHeader.getBoundingClientRect().bottom+'px'});
+addEventListener('scroll',()=>{const y=Math.max(scrollY,0);if(Math.abs(y-lastY)<6)return;const pin=document.querySelector('.hero-pin');const keep=menu.getAttribute('aria-expanded')==='true'||siteHeader.contains(document.activeElement)||(pin&&pin.getBoundingClientRect().bottom>innerHeight);siteHeader.classList.toggle('is-scrolled',y>8);siteHeader.classList.toggle('is-hidden',!keep&&y>lastY&&y>siteHeader.offsetHeight);lastY=y},{passive:true});
+menu.addEventListener('click',()=>{siteHeader.classList.remove('is-hidden')});
 // Pinned hero: map scroll through the pin to --reveal, holding briefly at each end so both images read fully.
 const heroPin=document.querySelector('.hero-pin');
 if(heroPin&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const pinnedHero=heroPin.querySelector('.hero');let queued=false;

@@ -56,7 +56,8 @@ function bindEnquiryForm(form) {
 
 document.querySelectorAll('#inquiry,.enquiry-form').forEach(bindEnquiryForm);
 
-// Location suggestions as people type: one shared native datalist for every Location field. Free text is still accepted.
+// Suggestions under Location and Company fields: a small accessible combobox (our own list, not the
+// browser's datalist, so it always sits directly under the field). Free text is always accepted.
 const CITIES = ['Agra', 'Ahmedabad', 'Ajmer', 'Aligarh', 'Amravati', 'Amritsar', 'Aurangabad', 'Bareilly', 'Belagavi', 'Bengaluru',
   'Bhiwadi', 'Bhopal', 'Bhubaneswar', 'Chandigarh', 'Chennai', 'Coimbatore', 'Cuttack', 'Dehradun', 'Delhi', 'Dhanbad',
   'Durgapur', 'Faridabad', 'Gandhinagar', 'Ghaziabad', 'Goa', 'Greater Noida', 'Guntur', 'Gurugram', 'Guwahati', 'Gwalior',
@@ -66,18 +67,9 @@ const CITIES = ['Agra', 'Ahmedabad', 'Ajmer', 'Aligarh', 'Amravati', 'Amritsar',
   'Mohali', 'Mumbai', 'Mysuru', 'Nagpur', 'Nashik', 'Navi Mumbai', 'Noida', 'Panaji', 'Panchkula', 'Panipat', 'Patna',
   'Pimpri-Chinchwad', 'Puducherry', 'Pune', 'Raipur', 'Rajkot', 'Ranchi', 'Salem', 'Shimla', 'Siliguri', 'Sonipat', 'Srinagar',
   'Surat', 'Thane', 'Thiruvananthapuram', 'Thrissur', 'Tiruchirappalli', 'Tirupati', 'Udaipur', 'Vadodara', 'Varanasi',
-  'Vijayawada', 'Visakhapatnam', 'Warangal'];
-const locationFields = document.querySelectorAll('input[name="location"]');
-if (locationFields.length) {
-  const list = document.createElement('datalist');
-  list.id = 'city-suggestions';
-  list.append(...CITIES.map(city => Object.assign(document.createElement('option'), { value: city })));
-  document.body.append(list);
-  locationFields.forEach(input => { input.setAttribute('list', list.id); input.autocomplete = 'off'; });
-}
-
-// Company suggestions from Wikidata (built by scripts/fetch-company-names.py). Names are split into small files by
-// the first two letters of the normalised name; each is fetched once, on demand, and the best matches fill a datalist.
+  'Vijayawada', 'Visakhapatnam', 'Warangal',
+  // Names people still commonly type.
+  'Bangalore', 'Baroda', 'Bombay', 'Calcutta', 'Calicut', 'Gurgaon', 'Madras', 'Mysore', 'Pondicherry', 'Trivandrum', 'Vizag'];
 const companyKey = s => s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/^the\s+/, '').replace(/[^a-z0-9]/g, '');
 const companyShards = new Map();
 const loadCompanies = prefix => {
@@ -86,24 +78,88 @@ const loadCompanies = prefix => {
   }
   return companyShards.get(prefix);
 };
-document.querySelectorAll('input[name="company"]').forEach((input, i) => {
-  const list = document.createElement('datalist');
-  list.id = 'company-suggestions-' + i;
-  document.body.append(list);
-  input.setAttribute('list', list.id);
-  input.autocomplete = 'off';
-  let latest = '';
+// Company names come from Wikidata (scripts/fetch-company-names.py), split into files by two-letter prefix.
+const companyMatches = async typed => {
+  if (typed.length < 2) return [];
+  const names = await loadCompanies(typed.slice(0, 2));
+  const out = [];
+  for (const name of names) {
+    if (companyKey(name).startsWith(typed)) out.push(name);
+    if (out.length === 8) break;
+  }
+  return out;
+};
+const cityMatches = async typed => (typed ? CITIES.filter(c => companyKey(c).startsWith(typed)).slice(0, 8) : []);
+
+let comboCount = 0;
+function attachSuggestions(input, source) {
+  const id = 'suggest-' + (++comboCount);
+  const list = document.createElement('ul');
+  list.className = 'suggest';
+  list.id = id;
+  list.setAttribute('role', 'listbox');
+  list.hidden = true;
+  input.after(list);
+  input.parentElement.classList.add('has-suggest');
+  Object.assign(input, { autocomplete: 'off' });
+  input.setAttribute('role', 'combobox');
+  input.setAttribute('aria-autocomplete', 'list');
+  input.setAttribute('aria-controls', id);
+  input.setAttribute('aria-expanded', 'false');
+
+  let items = [], active = -1, latest = '';
+  const close = () => {
+    list.hidden = true; active = -1;
+    input.setAttribute('aria-expanded', 'false');
+    input.removeAttribute('aria-activedescendant');
+  };
+  const highlight = i => {
+    active = i;
+    [...list.children].forEach((li, n) => li.setAttribute('aria-selected', String(n === i)));
+    if (i > -1) { input.setAttribute('aria-activedescendant', id + '-' + i); list.children[i].scrollIntoView({ block: 'nearest' }); }
+    else input.removeAttribute('aria-activedescendant');
+  };
+  const choose = i => { input.value = items[i]; close(); input.dispatchEvent(new Event('change', { bubbles: true })); };
+  const render = typedRaw => {
+    if (!items.length) return close();
+    list.replaceChildren(...items.map((name, n) => {
+      const li = document.createElement('li');
+      li.id = id + '-' + n;
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', 'false');
+      const cut = name.toLowerCase().startsWith(typedRaw.toLowerCase()) ? typedRaw.length : 0;
+      const strong = document.createElement('strong');
+      strong.textContent = name.slice(0, cut);
+      li.append(strong, name.slice(cut));
+      li.addEventListener('mousedown', e => { e.preventDefault(); choose(n); });
+      return li;
+    }));
+    list.hidden = false; active = -1;
+    input.setAttribute('aria-expanded', 'true');
+    // Keep the list on screen: open towards the left when the field sits near the right edge.
+    list.classList.remove('align-end');
+    if (list.getBoundingClientRect().right > document.documentElement.clientWidth - 8) list.classList.add('align-end');
+  };
+
   input.addEventListener('input', async () => {
-    const typed = companyKey(input.value);
+    const raw = input.value.trim();
+    const typed = companyKey(raw);
     latest = typed;
-    if (typed.length < 2) { list.replaceChildren(); return; }
-    const names = await loadCompanies(typed.slice(0, 2));
+    const found = await source(typed);
     if (latest !== typed) return; // a newer keystroke has taken over
-    const matches = [];
-    for (const name of names) {
-      if (companyKey(name).startsWith(typed) && name !== input.value) matches.push(name);
-      if (matches.length === 8) break;
-    }
-    list.replaceChildren(...matches.map(name => Object.assign(document.createElement('option'), { value: name })));
+    items = found.filter(n => n !== input.value);
+    render(raw);
   });
-});
+  input.addEventListener('keydown', e => {
+    if (list.hidden) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); highlight((active + 1) % items.length); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(active <= 0 ? items.length - 1 : active - 1); }
+    else if (e.key === 'Enter' && active > -1) { e.preventDefault(); choose(active); }
+    else if (e.key === 'Escape') { e.preventDefault(); close(); }
+    else if (e.key === 'Tab') close();
+  });
+  input.addEventListener('blur', () => setTimeout(close, 120));
+}
+
+document.querySelectorAll('input[name="location"]').forEach(input => attachSuggestions(input, cityMatches));
+document.querySelectorAll('input[name="company"]').forEach(input => attachSuggestions(input, companyMatches));
