@@ -248,3 +248,5 @@ header nav a{display:inline-flex;align-items:center;min-height:44px;padding:0}
 .article-original strong{font-weight:600}
 .article-meta{flex-wrap:wrap;row-gap:4px}
 .article-meta span{white-space:nowrap}
+/* The tagline takes the logo's width; wordmark.js sets its letter-spacing to fill it exactly. */
+.wordmark small{width:0;min-width:100%;white-space:nowrap;letter-spacing:.04em}

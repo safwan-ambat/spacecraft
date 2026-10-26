@@ -1,0 +1,3 @@
+// Fit each wordmark tagline to the exact width of the logo above it, whatever font the device uses.
+function fitTaglines(){document.querySelectorAll('.wordmark').forEach(w=>{const logo=w.querySelector('.wordmark-type'),tag=w.querySelector('small');if(!logo||!tag||!tag.offsetParent)return;tag.style.letterSpacing='0px';tag.style.marginRight='0px';const r=document.createRange();r.selectNodeContents(tag);const gaps=tag.textContent.length-1,ls=(logo.getBoundingClientRect().width-r.getBoundingClientRect().width)/gaps;tag.style.letterSpacing=ls+'px';tag.style.marginRight=-ls+'px'})}
+fitTaglines();document.fonts?.ready.then(fitTaglines);addEventListener('resize',fitTaglines);
