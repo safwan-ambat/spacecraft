@@ -2,6 +2,8 @@ from pathlib import Path
 import re,json,html,xml.etree.ElementTree as ET
 from urllib.parse import urlparse,quote
 ROOT=Path(__file__).resolve().parents[1]; D=ROOT/'dist'; WORK=ROOT.parent
+# In a git worktree the reference files sit further up; use the nearest folder that has them.
+WORK=next((d for d in ROOT.parents if (d/'ob-post.xml').exists()),WORK)
 E=html.escape
 ADDRESS='18, Buddha Vihara Rd, Cox Town, Bengaluru, Karnataka 560005'
 MAP='https://www.google.com/maps/search/?api=1&query='+quote(ADDRESS)
@@ -162,13 +164,55 @@ def contextual_section(slug):
   if re.search(pattern,slug):return section
  return None
 
+
+# Original journal articles live in scripts/journal/<slug>.md; publish dates sit centrally in scripts/journal/dates.json.
+JOURNAL=ROOT/'scripts'/'journal'
+DATES=json.loads((JOURNAL/'dates.json').read_text()) if (JOURNAL/'dates.json').exists() else {}
+MONTHS='January February March April May June July August September October November December'.split()
+def nice_date(d):y,m,dd=map(int,d.split('-'));return f'{dd} {MONTHS[m-1]} {y}'
+def inline(t):
+ t=E(t,quote=False)
+ t=re.sub(r'\[([^\]]+)\]\(([^)\s]+)\)',lambda m:f'<a href="{m.group(2)}"'+(' rel="noopener" target="_blank"' if m.group(2).startswith('http') else '')+f'>{m.group(1)}</a>',t)
+ t=re.sub(r'\*\*(.+?)\*\*',r'<strong>\1</strong>',t);return re.sub(r'(?<!\w)\*(.+?)\*(?!\w)',r'<em>\1</em>',t)
+def load_article(slug):
+ f=JOURNAL/(slug+'.md')
+ if not f.exists():return None
+ head,body=f.read_text().split('\n---\n',1);meta=dict(l.split(':',1) for l in head.strip('-\n').splitlines() if ':' in l);meta={k.strip():v.strip() for k,v in meta.items()}
+ sections=[];blocks=[b.strip() for b in re.split(r'\n\s*\n',body.strip()) if b.strip()]
+ for b in blocks:
+  if b.startswith('## '):sections.append([b[3:].strip(),[]]);continue
+  if not sections:sections.append(['',[]])
+  lines=b.splitlines()
+  if b.startswith('### '):h=f'<h3>{inline(lines[0][4:])}</h3>';rest='\n'.join(lines[1:]).strip();sections[-1][1].append(h+(f'<p>{inline(rest)}</p>' if rest else ''))
+  elif all(re.match(r'- ',l) for l in lines):sections[-1][1].append('<ul>'+''.join(f'<li>{inline(l[2:])}</li>' for l in lines)+'</ul>')
+  elif all(re.match(r'\d+\. ',l) for l in lines):sections[-1][1].append('<ol>'+''.join('<li>'+inline(re.sub(r'^\d+\. ','',l))+'</li>' for l in lines)+'</ol>')
+  else:sections[-1][1].append(f'<p>{inline(" ".join(lines))}</p>')
+ words=len(re.findall(r'\w+',body));meta['date']=DATES.get(slug,meta.get('date',''))
+ return {**meta,'sections':sections,'minutes':max(1,round(words/220)),'words':words}
 # Articles: original topic-led planning notes with concrete design questions.
 # The catch-all planning topic rotates through general interiors so neighbouring notes do not share one photo.
 GENERAL_IMAGES=['openplan','studio','collaborate','workplace','focus']
 def topic_image(key,slug,img):return GENERAL_IMAGES[sum(map(ord,slug))%len(GENERAL_IMAGES)] if key=='planning' else img
-articles=[]
+articles=[];ORIGINAL={s:load_article(s) for s in source['post']};ORIGINAL={s:a for s,a in ORIGINAL.items() if a}
+def related_cards(slug,key):
+ related=[x for x in source['post'] if x!=slug and x in ORIGINAL and classify(x)==key][:3]
+ related+=[x for x in source['post'] if x!=slug and x not in related and classify(x)==key][:3-len(related)]
+ # Topics with few notes top up from neighbouring articles so "Keep exploring" is never empty.
+ if len(related)<3:i=source['post'].index(slug);related+=[x for x in source['post'][i+1:]+source['post'][:i] if x not in related and x!=slug][:3-len(related)]
+ return cards([(s,ORIGINAL[s]['title'] if s in ORIGINAL else title_from(s),ORIGINAL[s]['deck'] if s in ORIGINAL else TOPICS[classify(s)][2],TOPICS[classify(s)][0]) for s in related])
 for slug in source['post']:
  key=classify(slug);topic,img,deck,sections,checks=TOPICS[key];img=topic_image(key,slug,img);title=title_from(slug)
+ a=ORIGINAL.get(slug)
+ if a:
+  title,deck=a['title'],a['deck'];img=a.get('image',img);topic=TOPICS[a['topic']][0] if a.get('topic') in TOPICS else topic
+  heads=[(i,h) for i,(h,_) in enumerate(a['sections'],1) if h]
+  toc='<nav class="article-toc" aria-label="On this page"><strong>IN THIS ARTICLE</strong>'+''.join(f'<a href="#part-{i}">{E(h)}</a>' for i,h in heads)+'</nav>'
+  content=''.join(f'<section id="part-{i}">'+(f'<h2>{E(h)}</h2>' if h else '')+''.join(parts)+'</section>' for i,(h,parts) in enumerate(a['sections'],1))
+  date=f'<span>Published <time datetime="{a["date"]}">{nice_date(a["date"])}</time></span>' if a['date'] else ''
+  ld=json.dumps({'@context':'https://schema.org','@type':'Article','headline':title,'description':deck,'datePublished':a['date'],'author':{'@type':'Organization','name':'Space Craft'},'publisher':{'@type':'Organization','name':'Space Craft'},'mainEntityOfPage':f'{BASE}/{slug}/'}).replace('</','<\\/')
+  b=crumb(topic,('blogs','Journal'))+f'<section class="article-heading section"><div class="eyebrow">SPACE CRAFT JOURNAL / {topic.upper()}</div><h1>{E(title)}</h1><p class="lead-copy">{E(deck)}</p><div class="article-meta"><a href="/author/">Space Craft editorial</a>{date}<span>{a["minutes"]} min read</span></div></section>'+photo(img,'Illustrative workplace interior','article-photo')+'<section class="section article-layout">'+toc+'<article class="article-content article-original">'+content+'</article></section><script type="application/ld+json">'+ld+'</script><section class="section tone-paper"><div class="eyebrow">KEEP EXPLORING</div><h2>Another angle on your space.</h2>'+related_cards(slug,key)+'</section>'+cta('Turn an idea into a useful brief.')
+  write(slug,title,b,'Journal','blogs',deck);articles.append({'path':slug,'title':title,'topic':topic,'image':img,'key':key,'description':deck,'date':a['date'],'original':True})
+  continue
  # Add a second relevant perspective instead of repeating a single generic body across every subject.
  secondary='budget' if any(w in slug for w in ['cost','budget','affordable']) else ('small' if 'small' in slug else ('brand' if any(w in slug for w in ['corporate','identity','brand']) else ('wellbeing' if 'productivity' in slug else 'planning')))
  sec=TOPICS[secondary][3][0]
@@ -180,16 +224,15 @@ for slug in source['post']:
  if context:article_sections=[context]+article_sections
  toc='<nav class="article-toc" aria-label="On this page"><strong>IN THIS NOTE</strong>'+''.join(f'<a href="#point-{i}">{h}</a>' for i,(h,p) in enumerate(article_sections,1))+'<a href="#checklist">Before you decide</a></nav>'
  content=''.join(f'<section id="point-{i}"><span class="eyebrow">0{i} / DESIGN CONSIDERATION</span><h2>{h}</h2><p>{p}</p></section>' for i,(h,p) in enumerate(article_sections,1))
- related=[x for x in source['post'] if x!=slug and classify(x)==key][:3]
- # Topics with few notes top up from neighbouring articles so "Keep exploring" is never empty.
- if len(related)<3:i=source['post'].index(slug);related+=[x for x in source['post'][i+1:]+source['post'][:i] if x not in related][:3-len(related)]
- b=crumb(topic,('blogs','Journal'))+f'<section class="article-heading section"><div class="eyebrow">SPACE CRAFT JOURNAL / {topic.upper()}</div><h1>{E(title)}</h1><p class="lead-copy">{intro}</p><div class="article-meta"><a href="/author/">Space Craft editorial</a><span>Planning note · 4 min read</span></div></section>'+photo(img,'Illustrative interior for a workplace design planning note','article-photo')+'<section class="section article-layout">'+toc+'<article class="article-content">'+content+'<section id="checklist" class="takeaway"><span class="eyebrow">BEFORE YOU DECIDE</span><h2>Take this into your brief.</h2><ul>'+''.join('<li>'+c+'</li>' for c in checks)+'</ul><p>Write down one priority, one constraint and one question you still need to answer. Review them beside the plan or material sample before agreeing the next design decision.</p></section></article></section><section class="section tone-paper"><div class="eyebrow">KEEP EXPLORING</div><h2>Another angle on your space.</h2>'+cards([(s,title_from(s),TOPICS[classify(s)][2],TOPICS[classify(s)][0]) for s in related])+'</section>'+cta('Turn an idea into a useful brief.')
+ b=crumb(topic,('blogs','Journal'))+f'<section class="article-heading section"><div class="eyebrow">SPACE CRAFT JOURNAL / {topic.upper()}</div><h1>{E(title)}</h1><p class="lead-copy">{intro}</p><div class="article-meta"><a href="/author/">Space Craft editorial</a><span>Planning note · 4 min read</span></div></section>'+photo(img,'Illustrative interior for a workplace design planning note','article-photo')+'<section class="section article-layout">'+toc+'<article class="article-content">'+content+'<section id="checklist" class="takeaway"><span class="eyebrow">BEFORE YOU DECIDE</span><h2>Take this into your brief.</h2><ul>'+''.join('<li>'+c+'</li>' for c in checks)+'</ul><p>Write down one priority, one constraint and one question you still need to answer. Review them beside the plan or material sample before agreeing the next design decision.</p></section></article></section><section class="section tone-paper"><div class="eyebrow">KEEP EXPLORING</div><h2>Another angle on your space.</h2>'+related_cards(slug,key)+'</section>'+cta('Turn an idea into a useful brief.')
  write(slug,title,b,'Journal','blogs',re.sub('<[^>]+>','',intro));articles.append({'path':slug,'title':title,'topic':topic,'image':img,'key':key,'description':deck})
 # Searchable journal with topic tabs and pagination, all articles rendered as real links.
-def article_card(a):return f'<a class="journal-card" data-library-item data-topic="{E(a["topic"])}" href="/{a["path"]}/"><img src="/assets/{a["image"]}.jpg" alt="Illustrative workplace interior" loading="lazy"><div><span class="eyebrow">{E(a["topic"])}</span><h3>{E(a["title"])}</h3><p>{E(a["description"])}</p><span class="read-link">Read the planning note ↗</span></div></a>'
+def article_card(a):return f'<a class="journal-card" data-library-item data-topic="{E(a["topic"])}" href="/{a["path"]}/"><img src="/assets/{a["image"]}.jpg" alt="Illustrative workplace interior" loading="lazy"><div><span class="eyebrow">{E(a["topic"])}</span><h3>{E(a["title"])}</h3><p>{E(a["description"])}</p><span class="read-link">'+('Read the article ↗' if a.get('original') else 'Read the planning note ↗')+'</span></div></a>'
 def library(items,story=False):
  topics=sorted(set(a['topic'] for a in items));return '<div class="library-controls"><label>Find an idea<input type="search" id="library-search" placeholder="Try ceilings, reception or budget…"></label><label>Topic<select id="library-topic"><option value="">All topics</option>'+''.join(f'<option>{E(t)}</option>' for t in topics)+'</select></label></div><div class="library-summary" aria-live="polite"></div><div class="journal-grid" data-library>'+''.join(article_card(a) for a in items)+'</div><p class="library-empty" hidden>No matching ideas. Try a broader search or select all topics.</p><div class="pagination"><button type="button" data-page="prev">← Previous</button><span class="pagination-status"></span><button type="button" data-page="next">Next →</button></div>'
-write('blogs','Fresh thinking for the working day.',crumb('Journal')+'<section class="section journal-intro"><div class="eyebrow">THE SPACE CRAFT JOURNAL</div><h1>Ideas for<br><em>better work.</em></h1><p class="lead-copy narrow">Practical planning notes on layouts, materials, shared spaces and the details that shape a workplace.</p><a class="text-link" href="/web-stories/">Prefer a quick read? <span>↗</span></a></section><section class="section library-section">'+library(articles)+'</section>'+cta(),active='blogs')
+# Original articles lead the library, newest first; templated notes keep sitemap order.
+articles=sorted([a for a in articles if a.get('original')],key=lambda a:a['date'],reverse=True)+[a for a in articles if not a.get('original')]
+write('blogs','Fresh thinking for the working day.',crumb('Journal')+'<section class="section journal-intro"><div class="eyebrow">THE SPACE CRAFT JOURNAL</div><h1>Ideas for<br><em>better work.</em></h1><p class="lead-copy narrow">Articles and planning notes on layouts, light, sound, materials and the details that shape a workplace.</p><a class="text-link" href="/web-stories/">Prefer a quick read? <span>↗</span></a></section><section class="section library-section">'+library(articles)+'</section>'+cta(),active='blogs')
 for slug in source['category']:
  key=classify(slug);topic=title_from(slug).rstrip('.');items=[a for a in articles if a['key']==key];
  write(slug,topic,crumb(topic,('blogs','Journal'))+'<section class="section journal-intro"><div class="eyebrow">JOURNAL / TOPIC COLLECTION</div><h1>'+topic+'.</h1><p class="lead-copy narrow">'+TOPICS[key][2]+' Explore practical planning notes, questions and considerations for your workplace brief.</p></section><section class="section library-section">'+library(items or articles[:6])+'</section>'+cta(),'Topic','blogs')

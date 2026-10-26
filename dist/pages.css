@@ -115,3 +115,12 @@ form.is-sent .enquiry-result,form.is-sent #form-status{margin-top:0}
 /* Field focus: no boxed ring; the underline goes solid and thickens instead (white on the red section, navy elsewhere). */
 input:focus,select:focus,textarea:focus{outline:none;border-bottom-color:var(--focus-line,var(--ink));box-shadow:0 1px 0 var(--focus-line,var(--ink))}
 .contact{--focus-line:#fff}
+.article-original h3{font-family:Sora,Arial,sans-serif;font-size:20px;font-weight:600;letter-spacing:-.01em;line-height:1.3;margin:34px 0 0}
+.article-original ul,.article-original ol{padding-left:22px;margin:22px 0}
+.article-original li{font-size:clamp(16px,1.2vw,18px);line-height:1.65;margin:10px 0}
+.article-original li::marker{color:var(--red)}
+.article-original a{text-decoration:underline;text-underline-offset:3px}
+.article-original a:hover{color:var(--red)}
+.article-original strong{font-weight:600}
+.article-meta{flex-wrap:wrap;row-gap:4px}
+.article-meta span{white-space:nowrap}
