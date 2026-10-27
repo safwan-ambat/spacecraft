@@ -269,7 +269,7 @@ html.lenis,.lenis.lenis-smooth{scroll-behavior:auto!important}
 .select-list li[aria-selected="true"]{background:none;color:var(--ink);font-weight:600}
 .select-list li.is-active,.select-list li:hover{background:var(--paper);color:var(--ink)}
 .partner-form .select-trigger{max-width:280px}
-/* Wordmark: "craft" carries a warm gradient from the brand red to orange; plain red where background-clip:text is unsupported. */
+/* Wordmark: "craft" carries a warm gradient from orange to the brand red; plain red where background-clip:text is unsupported. */
 @supports ((-webkit-background-clip:text) or (background-clip:text)){
-.wordmark-type .logo-craft{background:linear-gradient(100deg,#b3261d 0%,#d93a28 45%,#f0703a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.wordmark-type .logo-craft{background:linear-gradient(100deg,#f0703a 0%,#d93a28 55%,#b3261d 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
 }
